@@ -1,7 +1,7 @@
 // npx tsx --watch ./demo.ts
 
 import { readFile } from "node:fs/promises";
-import schemtoschematic from "./schemtoschematic.cjs";
+import schemtoschematic from "./schemtoschematic.js";
 
 const DEMO = new URL("./small-lobby.schem",import.meta.url);
 

@@ -1,13 +1,5 @@
-globalThis.nbt = undefined;
-globalThis.zlib = undefined;
-
-if (typeof nbt === 'undefined') {
-    nbt = require('./nbt');
-}
-
-if (typeof zlib === 'undefined') {
-    zlib = require('zlib');
-}
+import nbt from './nbt.cjs';
+import { gzip } from 'node:zlib';
 
 var blocksNamespace = {
 'minecraft:air':0,
@@ -1607,7 +1599,7 @@ var blocksNamespace = {
 'minecraft:structure_block[mode=data]':4083
 };
 
-function schemtoschematic(arrayBuffer: Uint8Array, callback: (data: Uint8Array) => void): void {
+export default function schemtoschematic(arrayBuffer: Uint8Array, callback: (data: Uint8Array) => void): void {
     // Move the schematic offset data to the old location
     function moveOffset(root) {
         if ('Metadata' in root.value) {
@@ -1906,12 +1898,10 @@ function schemtoschematic(arrayBuffer: Uint8Array, callback: (data: Uint8Array) 
         moveTileEntities(root);
         convertBlockData(root);
 
-        zlib.gzip(new Uint8Array(nbt.writeUncompressed(root)), function(error, data) {
+        gzip(new Uint8Array(nbt.writeUncompressed(root)), function(error, data) {
             if (error) { throw error; }
             
             callback(data);
         });
     });
 }
-
-export = schemtoschematic;
