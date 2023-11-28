@@ -1,4 +1,4 @@
-import nbt from './nbt.cjs';
+import nbt from 'nbt';
 import { gzip } from 'node:zlib';
 
 export enum blocksNamespace {
