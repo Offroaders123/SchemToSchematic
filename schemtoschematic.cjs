@@ -1844,7 +1844,7 @@ function schemtoschematic(arrayBuffer, callback) {
         
         var error = 'Unknown namespace key: ' + originalKey + ', replacing with air.';
         
-        if (document && document.querySelector) {
+        if (typeof document !== "undefined" && document.querySelector) {
             var errorNode = document.querySelector('#error');
             
             if (errorNode && !~errorNode.innerHTML.indexOf(error)) {
