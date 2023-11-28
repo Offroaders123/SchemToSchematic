@@ -2,7 +2,7 @@ import nbt from 'nbt';
 import { gzip } from 'node:zlib';
 import { promisify } from 'node:util';
 
-export enum blocksNamespace {
+export enum BlocksNamespace {
     'minecraft:air' = 0,
     'minecraft:stone' = 16,
     'minecraft:granite' = 17,
@@ -1600,7 +1600,7 @@ export enum blocksNamespace {
     'minecraft:structure_block[mode=data]' = 4083
 }
 
-export default async function schemtoschematic(arrayBuffer: Uint8Array): Promise<Uint8Array> {
+export async function schemToSchematic(arrayBuffer: Uint8Array): Promise<Uint8Array> {
     // Had to do use `.bind()` because of module scoping issues with NBT.js
     var root: any = await promisify(nbt.parse.bind(nbt))(arrayBuffer);
 
@@ -1616,8 +1616,10 @@ export default async function schemtoschematic(arrayBuffer: Uint8Array): Promise
     return data;
 }
 
-// Move the schematic offset data to the old location
-function moveOffset(root) {
+/**
+ * Move the schematic offset data to the old location
+*/
+function moveOffset(root): void {
     if ('Metadata' in root.value) {
         root.value.WEOffsetX = root.value.Metadata.value.WEOffsetX;
         root.value.WEOffsetY = root.value.Metadata.value.WEOffsetY;
@@ -1627,8 +1629,10 @@ function moveOffset(root) {
     }
 }
 
-// Move the schematic origin data to the old location
-function moveOrigin(root) {
+/**
+ * Move the schematic origin data to the old location
+*/
+function moveOrigin(root): void {
     if ('Offset' in root.value) {
         root.value.WEOriginX = {type: 'int', value: root.value.Offset.value[0]};
         root.value.WEOriginY = {type: 'int', value: root.value.Offset.value[1]};
@@ -1638,13 +1642,17 @@ function moveOrigin(root) {
     }
 }
 
-// Set the schematic materials type
-function setMaterials(root) {
+/**
+ * Set the schematic materials type
+*/
+function setMaterials(root): void {
     root.value.Materials = {type: 'string', value: 'Alpha'};
 }
 
-// Move the tile entites to the old location and modify their position and id data
-function moveTileEntities(root) {
+/**
+ * Move the tile entites to the old location and modify their position and id data
+*/
+function moveTileEntities(root): void {
     if ('BlockEntities' in root.value) {
         root.value.TileEntities = root.value.BlockEntities;
         delete root.value.BlockEntities;
@@ -1670,8 +1678,8 @@ function moveTileEntities(root) {
 }
 
 function convertToLegacyBlockId(namespaceKey) {
-    if (namespaceKey in blocksNamespace) {
-        return blocksNamespace[namespaceKey];
+    if (namespaceKey in BlocksNamespace) {
+        return BlocksNamespace[namespaceKey];
     }
     
     // Not in the table, try to find a match
@@ -1746,23 +1754,23 @@ function convertToLegacyBlockId(namespaceKey) {
         namespaceKey = namespaceKey.substr(0, index) + 'snowy=false' + namespaceKey.substr(namespaceKey.indexOf(',', index));
     }
     
-    if (namespaceKey in blocksNamespace) {
-        return blocksNamespace[namespaceKey];
+    if (namespaceKey in BlocksNamespace) {
+        return BlocksNamespace[namespaceKey];
     }
     
     if (~(index = namespaceKey.indexOf('up=false'))) {
         var tempkey = namespaceKey.substr(0, index) + 'up=true' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
-        if (tempkey in blocksNamespace) {
-            return blocksNamespace[tempkey];
+        if (tempkey in BlocksNamespace) {
+            return BlocksNamespace[tempkey];
         }
     }
     
     if (~(index = namespaceKey.indexOf('up=true'))) {
         tempkey = namespaceKey.substr(0, index) + 'up=false' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
-        if (tempkey in blocksNamespace) {
-            return blocksNamespace[tempkey];
+        if (tempkey in BlocksNamespace) {
+            return BlocksNamespace[tempkey];
         }
     }
     
@@ -1790,8 +1798,8 @@ function convertToLegacyBlockId(namespaceKey) {
         namespaceKey = namespaceKey.substr(0, index) + 'rotation=0' + namespaceKey.substr(namespaceKey.indexOf(',', index));
     }
     
-    if (namespaceKey in blocksNamespace) {
-        return blocksNamespace[namespaceKey];
+    if (namespaceKey in BlocksNamespace) {
+        return BlocksNamespace[namespaceKey];
     }
     
     if (~(index = namespaceKey.indexOf('facing=')) && ~namespaceKey.indexOf('hinge=')) {
@@ -1801,40 +1809,40 @@ function convertToLegacyBlockId(namespaceKey) {
             tempkey = tempkey.substr(0, index) + 'open=false' + tempkey.substr(namespaceKey.indexOf(',', index));
         }
         
-        if (tempkey in blocksNamespace) {
-            return blocksNamespace[tempkey];
+        if (tempkey in BlocksNamespace) {
+            return BlocksNamespace[tempkey];
         }
         
         index = namespaceKey.indexOf('hinge=');
         
         tempkey = namespaceKey.substr(0, index) + 'hinge=right' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
-        if (tempkey in blocksNamespace) {
-            return blocksNamespace[tempkey];
+        if (tempkey in BlocksNamespace) {
+            return BlocksNamespace[tempkey];
         }
     }
     
     if (~(index = namespaceKey.indexOf('facing=east'))) {
         tempkey = namespaceKey.substr(0, index) + 'facing=west' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
-        if (tempkey in blocksNamespace) {
-            return blocksNamespace[tempkey];
+        if (tempkey in BlocksNamespace) {
+            return BlocksNamespace[tempkey];
         }
     }
     
     if (~(index = namespaceKey.indexOf('facing='))) {
         tempkey = namespaceKey.substr(0, index) + 'facing=north' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
-        if (tempkey in blocksNamespace) {
-            return blocksNamespace[tempkey];
+        if (tempkey in BlocksNamespace) {
+            return BlocksNamespace[tempkey];
         }
     }
     
     if (~(index = namespaceKey.indexOf('half=upper'))) {
         tempkey = namespaceKey.substr(0, index) + 'half=lower' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
-        if (tempkey in blocksNamespace) {
-            return blocksNamespace[tempkey];
+        if (tempkey in BlocksNamespace) {
+            return BlocksNamespace[tempkey];
         }
     }
     
@@ -1848,8 +1856,8 @@ function convertToLegacyBlockId(namespaceKey) {
     if (~(index = originalKey.indexOf('['))) {
         tempkey = originalKey.substr(0, index);
     
-        if (tempkey in blocksNamespace) {
-            return blocksNamespace[tempkey];
+        if (tempkey in BlocksNamespace) {
+            return BlocksNamespace[tempkey];
         }
     }
     
@@ -1867,8 +1875,10 @@ function convertToLegacyBlockId(namespaceKey) {
     return 0;
 }
 
-// Convert the block data to the legacy blocks and data
-function convertBlockData(root) {
+/**
+ * Convert the block data to the legacy blocks and data
+*/
+function convertBlockData(root): void {
     if ('Palette' in root.value && 'BlockData' in root.value) {
         var palette = [];
     

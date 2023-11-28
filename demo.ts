@@ -1,14 +1,14 @@
 // npx tsx --watch ./demo.ts
 
 import { readFile } from "node:fs/promises";
-import schemtoschematic from "./schemtoschematic.js";
+import { schemToSchematic } from "./schemtoschematic.js";
 
 const DEMO = new URL("./small-lobby.schem",import.meta.url);
 
 const buffer: Buffer = await readFile(DEMO);
 console.log(buffer);
 
-console.log(schemtoschematic,"\n");
+console.log(schemToSchematic,"\n");
 
-const schematic: Uint8Array = await schemtoschematic(buffer);
+const schematic: Uint8Array = await schemToSchematic(buffer);
 console.log("\n",schematic);
