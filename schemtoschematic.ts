@@ -1,5 +1,6 @@
 import nbt from 'nbt';
 import { gzip } from 'node:zlib';
+import { promisify } from 'node:util';
 
 export enum blocksNamespace {
 'minecraft:air' = 0,
@@ -1599,7 +1600,7 @@ export enum blocksNamespace {
 'minecraft:structure_block[mode=data]' = 4083
 }
 
-export default function schemtoschematic(arrayBuffer: Uint8Array, callback: (data: Uint8Array) => void): void {
+export default async function schemtoschematic(arrayBuffer: Uint8Array): Promise<Uint8Array> {
     // Move the schematic offset data to the old location
     function moveOffset(root) {
         if ('Metadata' in root.value) {
@@ -1889,19 +1890,17 @@ export default function schemtoschematic(arrayBuffer: Uint8Array, callback: (dat
         }
     }
 
-    nbt.parse(arrayBuffer, function(error, root) {
-        if (error) { throw error; }
+    // Had to do use `.bind()` because of module scoping issues with NBT.js
+    var root: any = await promisify(nbt.parse.bind(nbt))(arrayBuffer);
 
-        moveOffset(root);
-        moveOrigin(root);
-        setMaterials(root);
-        moveTileEntities(root);
-        convertBlockData(root);
+    moveOffset(root);
+    moveOrigin(root);
+    setMaterials(root);
+    moveTileEntities(root);
+    convertBlockData(root);
 
-        gzip(new Uint8Array(nbt.writeUncompressed(root)), function(error, data) {
-            if (error) { throw error; }
-            
-            callback(data);
-        });
-    });
+    var uncompressedData: ArrayBuffer = nbt.writeUncompressed(root);
+    var data: Buffer = await promisify(gzip)(uncompressedData);
+
+    return data;
 }

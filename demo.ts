@@ -10,5 +10,5 @@ console.log(buffer);
 
 console.log(schemtoschematic,"\n");
 
-const schematic: Uint8Array = await new Promise(resolve => schemtoschematic(buffer,resolve));
+const schematic: Uint8Array = await schemtoschematic(buffer);
 console.log("\n",schematic);
