@@ -1602,7 +1602,7 @@ export enum BlocksNamespace {
 
 export async function schemToSchematic(arrayBuffer: Uint8Array): Promise<Uint8Array> {
     // Had to do use `.bind()` because of module scoping issues with NBT.js
-    var root: any = await promisify(nbt.parse.bind(nbt))(arrayBuffer);
+    const root: any = await promisify(nbt.parse.bind(nbt))(arrayBuffer);
 
     moveOffset(root);
     moveOrigin(root);
@@ -1610,8 +1610,8 @@ export async function schemToSchematic(arrayBuffer: Uint8Array): Promise<Uint8Ar
     moveTileEntities(root);
     convertBlockData(root);
 
-    var uncompressedData: ArrayBuffer = nbt.writeUncompressed(root);
-    var data: Buffer = await promisify(gzip)(uncompressedData);
+    const uncompressedData: ArrayBuffer = nbt.writeUncompressed(root);
+    const data: Buffer = await promisify(gzip)(uncompressedData);
 
     return data;
 }
@@ -1657,8 +1657,8 @@ function moveTileEntities(root): void {
         root.value.TileEntities = root.value.BlockEntities;
         delete root.value.BlockEntities;
         
-        for (var i = 0; i < root.value.TileEntities.length; i++) {
-            var tileEntity = root.value.TileEntities[i];
+        for (let i = 0; i < root.value.TileEntities.length; i++) {
+            const tileEntity = root.value.TileEntities[i];
             
             if ('Pos' in tileEntity.value) {
                 tileEntity.value.x = {type: 'int', value: tileEntity.value.Pos.value[0]};
@@ -1683,8 +1683,8 @@ function convertToLegacyBlockId(namespaceKey) {
     }
     
     // Not in the table, try to find a match
-    var originalKey = namespaceKey;
-    var index;
+    const originalKey = namespaceKey;
+    let index: number;
     
     if (~(index = namespaceKey.indexOf('shape='))) {
         namespaceKey = namespaceKey.substr(0, index) + 'shape=straight' + namespaceKey.substr(namespaceKey.indexOf(',', index));
@@ -1759,7 +1759,7 @@ function convertToLegacyBlockId(namespaceKey) {
     }
     
     if (~(index = namespaceKey.indexOf('up=false'))) {
-        var tempkey = namespaceKey.substr(0, index) + 'up=true' + namespaceKey.substr(namespaceKey.indexOf(',', index));
+        const tempkey = namespaceKey.substr(0, index) + 'up=true' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
             return BlocksNamespace[tempkey];
@@ -1767,7 +1767,7 @@ function convertToLegacyBlockId(namespaceKey) {
     }
     
     if (~(index = namespaceKey.indexOf('up=true'))) {
-        tempkey = namespaceKey.substr(0, index) + 'up=false' + namespaceKey.substr(namespaceKey.indexOf(',', index));
+        const tempkey = namespaceKey.substr(0, index) + 'up=false' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
             return BlocksNamespace[tempkey];
@@ -1803,7 +1803,7 @@ function convertToLegacyBlockId(namespaceKey) {
     }
     
     if (~(index = namespaceKey.indexOf('facing=')) && ~namespaceKey.indexOf('hinge=')) {
-        tempkey = namespaceKey.substr(0, index) + 'facing=east' + namespaceKey.substr(namespaceKey.indexOf(',', index));
+        let tempkey = namespaceKey.substr(0, index) + 'facing=east' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (~(index = tempkey.indexOf('open=true'))) {
             tempkey = tempkey.substr(0, index) + 'open=false' + tempkey.substr(namespaceKey.indexOf(',', index));
@@ -1823,7 +1823,7 @@ function convertToLegacyBlockId(namespaceKey) {
     }
     
     if (~(index = namespaceKey.indexOf('facing=east'))) {
-        tempkey = namespaceKey.substr(0, index) + 'facing=west' + namespaceKey.substr(namespaceKey.indexOf(',', index));
+        const tempkey = namespaceKey.substr(0, index) + 'facing=west' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
             return BlocksNamespace[tempkey];
@@ -1831,7 +1831,7 @@ function convertToLegacyBlockId(namespaceKey) {
     }
     
     if (~(index = namespaceKey.indexOf('facing='))) {
-        tempkey = namespaceKey.substr(0, index) + 'facing=north' + namespaceKey.substr(namespaceKey.indexOf(',', index));
+        const tempkey = namespaceKey.substr(0, index) + 'facing=north' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
             return BlocksNamespace[tempkey];
@@ -1839,7 +1839,7 @@ function convertToLegacyBlockId(namespaceKey) {
     }
     
     if (~(index = namespaceKey.indexOf('half=upper'))) {
-        tempkey = namespaceKey.substr(0, index) + 'half=lower' + namespaceKey.substr(namespaceKey.indexOf(',', index));
+        const tempkey = namespaceKey.substr(0, index) + 'half=lower' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
             return BlocksNamespace[tempkey];
@@ -1847,24 +1847,24 @@ function convertToLegacyBlockId(namespaceKey) {
     }
     
     if (~(index = originalKey.indexOf('powered=true'))) {
-        tempkey = originalKey.substr(0, index) + 'powered=false' + originalKey.substr(originalKey.indexOf(',', index));
+        const tempkey = originalKey.substr(0, index) + 'powered=false' + originalKey.substr(originalKey.indexOf(',', index));
     
         return convertToLegacyBlockId(tempkey);
     }
     
     // How about no block states?
     if (~(index = originalKey.indexOf('['))) {
-        tempkey = originalKey.substr(0, index);
+        const tempkey = originalKey.substr(0, index);
     
         if (tempkey in BlocksNamespace) {
             return BlocksNamespace[tempkey];
         }
     }
     
-    var error = 'Unknown namespace key: ' + originalKey + ', replacing with air.';
+    const error: string = 'Unknown namespace key: ' + originalKey + ', replacing with air.';
     
     if (typeof document !== "undefined" && document.querySelector) {
-        var errorNode = document.querySelector('#error');
+        const errorNode = document.querySelector('#error');
         
         if (errorNode && !~errorNode.innerHTML.indexOf(error)) {
             errorNode.innerHTML += error + '<br/>';
@@ -1880,20 +1880,20 @@ function convertToLegacyBlockId(namespaceKey) {
 */
 function convertBlockData(root): void {
     if ('Palette' in root.value && 'BlockData' in root.value) {
-        var palette = [];
+        const palette = [];
     
-        for (var key in root.value.Palette.value) {
+        for (const key in root.value.Palette.value) {
             palette[root.value.Palette.value[key].value] = key;
         }
     
-        var blockdata = root.value.BlockData.value;
-        var blocks = [];
-        var data = [];
-        var varInt = 0;
-        var varIntLength = 0;
-        var blockId;
+        const blockdata = root.value.BlockData.value;
+        const blocks = [];
+        const data = [];
+        let varInt = 0;
+        let varIntLength = 0;
+        let blockId;
     
-        for (var i = 0; i < blockdata.length; i++) {
+        for (let i = 0; i < blockdata.length; i++) {
             varInt |= (blockdata[i] & 127) << (varIntLength++ * 7);
             
             if ((blockdata[i] & 128) == 128) {
