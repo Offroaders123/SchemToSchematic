@@ -1601,6 +1601,21 @@ export enum blocksNamespace {
 }
 
 export default async function schemtoschematic(arrayBuffer: Uint8Array): Promise<Uint8Array> {
+    // Had to do use `.bind()` because of module scoping issues with NBT.js
+    var root: any = await promisify(nbt.parse.bind(nbt))(arrayBuffer);
+
+    moveOffset(root);
+    moveOrigin(root);
+    setMaterials(root);
+    moveTileEntities(root);
+    convertBlockData(root);
+
+    var uncompressedData: ArrayBuffer = nbt.writeUncompressed(root);
+    var data: Buffer = await promisify(gzip)(uncompressedData);
+
+    return data;
+}
+
     // Move the schematic offset data to the old location
     function moveOffset(root) {
         if ('Metadata' in root.value) {
@@ -1889,18 +1904,3 @@ export default async function schemtoschematic(arrayBuffer: Uint8Array): Promise
             delete root.value.BlockData;
         }
     }
-
-    // Had to do use `.bind()` because of module scoping issues with NBT.js
-    var root: any = await promisify(nbt.parse.bind(nbt))(arrayBuffer);
-
-    moveOffset(root);
-    moveOrigin(root);
-    setMaterials(root);
-    moveTileEntities(root);
-    convertBlockData(root);
-
-    var uncompressedData: ArrayBuffer = nbt.writeUncompressed(root);
-    var data: Buffer = await promisify(gzip)(uncompressedData);
-
-    return data;
-}
