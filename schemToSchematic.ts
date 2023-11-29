@@ -1657,21 +1657,21 @@ function moveTileEntities(root): void {
         root.value.TileEntities = root.value.BlockEntities;
         delete root.value.BlockEntities;
         
-        for (let i = 0; i < root.value.TileEntities.length; i++) {
-            const tileEntity = root.value.TileEntities[i];
+        for (let i = 0; i < root.value.TileEntities.value.value.length; i++) {
+            const tileEntity = root.value.TileEntities.value.value[i];
             
-            if ('Pos' in tileEntity.value) {
-                tileEntity.value.x = {type: 'int', value: tileEntity.value.Pos.value[0]};
-                tileEntity.value.y = {type: 'int', value: tileEntity.value.Pos.value[1]};
-                tileEntity.value.z = {type: 'int', value: tileEntity.value.Pos.value[2]};
+            if ('Pos' in tileEntity) {
+                tileEntity.x = {type: 'int', value: tileEntity.Pos.value[0]};
+                tileEntity.y = {type: 'int', value: tileEntity.Pos.value[1]};
+                tileEntity.z = {type: 'int', value: tileEntity.Pos.value[2]};
                 
-                delete tileEntity.value.Pos;
+                delete tileEntity.Pos;
             }
             
-            if ('Id' in tileEntity.value) {
-                tileEntity.value.id = tileEntity.value.Id;
+            if ('Id' in tileEntity) {
+                tileEntity.id = tileEntity.Id;
                 
-                delete tileEntity.value.Id;
+                delete tileEntity.Id;
             }
         }
     }
