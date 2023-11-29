@@ -1,7 +1,7 @@
 {
   "type": "module",
   "dependencies": {
-    "nbt": "^0.8.1"
+    "nbtify": "^1.80.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

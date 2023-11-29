@@ -1,6 +1,4 @@
-import nbt from 'nbt';
-import { gzip } from 'node:zlib';
-import { promisify } from 'node:util';
+import * as NBT from 'nbtify';
 
 export enum BlocksNamespace {
     'minecraft:air' = 0,
@@ -1602,16 +1600,15 @@ export enum BlocksNamespace {
 
 export async function schemToSchematic(arrayBuffer: Uint8Array): Promise<Uint8Array> {
     // Had to do use `.bind()` because of module scoping issues with NBT.js
-    const root: any = await promisify(nbt.parse.bind(nbt))(arrayBuffer);
+    const root = await NBT.read<any>(arrayBuffer);
 
-    moveOffset(root);
-    moveOrigin(root);
-    setMaterials(root);
-    moveTileEntities(root);
-    convertBlockData(root);
+    moveOffset(root.data);
+    moveOrigin(root.data);
+    setMaterials(root.data);
+    moveTileEntities(root.data);
+    convertBlockData(root.data);
 
-    const uncompressedData: ArrayBuffer = nbt.writeUncompressed(root);
-    const data: Buffer = await promisify(gzip)(uncompressedData);
+    const data: Uint8Array = await NBT.write(root);
 
     return data;
 }
@@ -1620,12 +1617,12 @@ export async function schemToSchematic(arrayBuffer: Uint8Array): Promise<Uint8Ar
  * Move the schematic offset data to the old location
 */
 function moveOffset(root): void {
-    if ('Metadata' in root.value) {
-        root.value.WEOffsetX = root.value.Metadata.value.WEOffsetX;
-        root.value.WEOffsetY = root.value.Metadata.value.WEOffsetY;
-        root.value.WEOffsetZ = root.value.Metadata.value.WEOffsetZ;
+    if ('Metadata' in root) {
+        root.WEOffsetX = root.Metadata.WEOffsetX;
+        root.WEOffsetY = root.Metadata.WEOffsetY;
+        root.WEOffsetZ = root.Metadata.WEOffsetZ;
         
-        delete root.value.Metadata;
+        delete root.Metadata;
     }
 }
 
@@ -1633,12 +1630,12 @@ function moveOffset(root): void {
  * Move the schematic origin data to the old location
 */
 function moveOrigin(root): void {
-    if ('Offset' in root.value) {
-        root.value.WEOriginX = {type: 'int', value: root.value.Offset.value[0]};
-        root.value.WEOriginY = {type: 'int', value: root.value.Offset.value[1]};
-        root.value.WEOriginZ = {type: 'int', value: root.value.Offset.value[2]};
+    if ('Offset' in root) {
+        root.WEOriginX = new NBT.Int32(root.Offset[0].valueOf());
+        root.WEOriginY = new NBT.Int32(root.Offset[1].valueOf());
+        root.WEOriginZ = new NBT.Int32(root.Offset[2].valueOf());
         
-        delete root.value.Offset;
+        delete root.Offset;
     }
 }
 
@@ -1646,24 +1643,24 @@ function moveOrigin(root): void {
  * Set the schematic materials type
 */
 function setMaterials(root): void {
-    root.value.Materials = {type: 'string', value: 'Alpha'};
+    root.Materials = 'Alpha';
 }
 
 /**
  * Move the tile entites to the old location and modify their position and id data
 */
 function moveTileEntities(root): void {
-    if ('BlockEntities' in root.value) {
-        root.value.TileEntities = root.value.BlockEntities;
-        delete root.value.BlockEntities;
+    if ('BlockEntities' in root) {
+        root.TileEntities = root.BlockEntities;
+        delete root.BlockEntities;
         
-        for (let i = 0; i < root.value.TileEntities.value.value.length; i++) {
-            const tileEntity = root.value.TileEntities.value.value[i];
+        for (let i = 0; i < root.TileEntities.length; i++) {
+            const tileEntity = root.TileEntities[i];
             
             if ('Pos' in tileEntity) {
-                tileEntity.x = {type: 'int', value: tileEntity.Pos.value[0]};
-                tileEntity.y = {type: 'int', value: tileEntity.Pos.value[1]};
-                tileEntity.z = {type: 'int', value: tileEntity.Pos.value[2]};
+                tileEntity.x = new NBT.Int32(tileEntity.Pos[0]);
+                tileEntity.y = new NBT.Int32(tileEntity.Pos[1]);
+                tileEntity.z = new NBT.Int32(tileEntity.Pos[2]);
                 
                 delete tileEntity.Pos;
             }
@@ -1879,14 +1876,14 @@ function convertToLegacyBlockId(namespaceKey) {
  * Convert the block data to the legacy blocks and data
 */
 function convertBlockData(root): void {
-    if ('Palette' in root.value && 'BlockData' in root.value) {
+    if ('Palette' in root && 'BlockData' in root) {
         const palette = [];
     
-        for (const key in root.value.Palette.value) {
-            palette[root.value.Palette.value[key].value] = key;
+        for (const key in root.Palette) {
+            palette[root.Palette[key]] = key;
         }
     
-        const blockdata = root.value.BlockData.value;
+        const blockdata = root.BlockData;
         const blocks = [];
         const data = [];
         let varInt = 0;
@@ -1909,8 +1906,8 @@ function convertBlockData(root): void {
             varInt = 0;
         }
         
-        root.value.Blocks = {type: 'byteArray', value: blocks};
-        root.value.Data = {type: 'byteArray', value: data};
-        delete root.value.BlockData;
+        root.Blocks = new Int8Array(blocks);
+        root.Data = new Int8Array(data);
+        delete root.BlockData;
     }
 }

@@ -10,5 +10,5 @@ console.log(buffer);
 
 console.log(schemToSchematic,"\n");
 
-const schematic: Uint8Array = await schemToSchematic(buffer);
+const schematic: Uint8Array = Buffer.from((await schemToSchematic(buffer)).buffer);
 console.log("\n",schematic);
