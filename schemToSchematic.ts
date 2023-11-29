@@ -1,5 +1,8 @@
 import * as NBT from 'nbtify';
 
+import type { Schem, SchemBlockEntity } from './schem.js';
+import type { Schematic, SchematicTileEntity } from './schematic.js';
+
 export enum BlocksNamespace {
     'minecraft:air' = 0,
     'minecraft:stone' = 16,
@@ -1598,9 +1601,10 @@ export enum BlocksNamespace {
     'minecraft:structure_block[mode=data]' = 4083
 }
 
+export type BlocksID = keyof typeof BlocksNamespace;
+
 export async function schemToSchematic(arrayBuffer: Uint8Array): Promise<Uint8Array> {
-    // Had to do use `.bind()` because of module scoping issues with NBT.js
-    const root = await NBT.read<any>(arrayBuffer);
+    const root = await NBT.read<Schem>(arrayBuffer);
 
     moveOffset(root.data);
     moveOrigin(root.data);
@@ -1616,12 +1620,13 @@ export async function schemToSchematic(arrayBuffer: Uint8Array): Promise<Uint8Ar
 /**
  * Move the schematic offset data to the old location
 */
-function moveOffset(root): void {
+function moveOffset(root: Schem): void {
     if ('Metadata' in root) {
-        root.WEOffsetX = root.Metadata.WEOffsetX;
-        root.WEOffsetY = root.Metadata.WEOffsetY;
-        root.WEOffsetZ = root.Metadata.WEOffsetZ;
+        (root as unknown as Schematic).WEOffsetX = root.Metadata.WEOffsetX;
+        (root as unknown as Schematic).WEOffsetY = root.Metadata.WEOffsetY;
+        (root as unknown as Schematic).WEOffsetZ = root.Metadata.WEOffsetZ;
         
+        // @ts-expect-error
         delete root.Metadata;
     }
 }
@@ -1629,12 +1634,13 @@ function moveOffset(root): void {
 /**
  * Move the schematic origin data to the old location
 */
-function moveOrigin(root): void {
+function moveOrigin(root: Schem): void {
     if ('Offset' in root) {
-        root.WEOriginX = new NBT.Int32(root.Offset[0].valueOf());
-        root.WEOriginY = new NBT.Int32(root.Offset[1].valueOf());
-        root.WEOriginZ = new NBT.Int32(root.Offset[2].valueOf());
+        (root as unknown as Schematic).WEOriginX = new NBT.Int32(root.Offset[0]!);
+        (root as unknown as Schematic).WEOriginY = new NBT.Int32(root.Offset[1]!);
+        (root as unknown as Schematic).WEOriginZ = new NBT.Int32(root.Offset[2]!);
         
+        // @ts-expect-error
         delete root.Offset;
     }
 }
@@ -1642,31 +1648,32 @@ function moveOrigin(root): void {
 /**
  * Set the schematic materials type
 */
-function setMaterials(root): void {
-    root.Materials = 'Alpha';
+function setMaterials(root: Schem): void {
+    (root as unknown as Schematic).Materials = 'Alpha';
 }
 
 /**
  * Move the tile entites to the old location and modify their position and id data
 */
-function moveTileEntities(root): void {
+function moveTileEntities(root: Schem): void {
     if ('BlockEntities' in root) {
-        root.TileEntities = root.BlockEntities;
+        (root as unknown as Schematic).TileEntities = root.BlockEntities as unknown as Schematic["TileEntities"];
+        // @ts-expect-error
         delete root.BlockEntities;
         
-        for (let i = 0; i < root.TileEntities.length; i++) {
-            const tileEntity = root.TileEntities[i];
+        for (let i = 0; i < (root as unknown as Schematic).TileEntities.length; i++) {
+            const tileEntity: SchematicTileEntity = (root as unknown as Schematic).TileEntities[i]!;
             
             if ('Pos' in tileEntity) {
-                tileEntity.x = new NBT.Int32(tileEntity.Pos[0]);
-                tileEntity.y = new NBT.Int32(tileEntity.Pos[1]);
-                tileEntity.z = new NBT.Int32(tileEntity.Pos[2]);
+                tileEntity.x = new NBT.Int32((tileEntity as unknown as SchemBlockEntity).Pos[0]!);
+                tileEntity.y = new NBT.Int32((tileEntity as unknown as SchemBlockEntity).Pos[1]!);
+                tileEntity.z = new NBT.Int32((tileEntity as unknown as SchemBlockEntity).Pos[2]!);
                 
                 delete tileEntity.Pos;
             }
             
             if ('Id' in tileEntity) {
-                tileEntity.id = tileEntity.Id;
+                (tileEntity as unknown as SchematicTileEntity).id = (tileEntity as unknown as SchemBlockEntity).Id;
                 
                 delete tileEntity.Id;
             }
@@ -1674,7 +1681,7 @@ function moveTileEntities(root): void {
     }
 }
 
-function convertToLegacyBlockId(namespaceKey) {
+function convertToLegacyBlockId(namespaceKey: BlocksID): BlocksNamespace {
     if (namespaceKey in BlocksNamespace) {
         return BlocksNamespace[namespaceKey];
     }
@@ -1759,7 +1766,7 @@ function convertToLegacyBlockId(namespaceKey) {
         const tempkey = namespaceKey.substr(0, index) + 'up=true' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
-            return BlocksNamespace[tempkey];
+            return BlocksNamespace[tempkey as BlocksID];
         }
     }
     
@@ -1767,7 +1774,7 @@ function convertToLegacyBlockId(namespaceKey) {
         const tempkey = namespaceKey.substr(0, index) + 'up=false' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
-            return BlocksNamespace[tempkey];
+            return BlocksNamespace[tempkey as BlocksID];
         }
     }
     
@@ -1807,7 +1814,7 @@ function convertToLegacyBlockId(namespaceKey) {
         }
         
         if (tempkey in BlocksNamespace) {
-            return BlocksNamespace[tempkey];
+            return BlocksNamespace[tempkey as BlocksID];
         }
         
         index = namespaceKey.indexOf('hinge=');
@@ -1815,7 +1822,7 @@ function convertToLegacyBlockId(namespaceKey) {
         tempkey = namespaceKey.substr(0, index) + 'hinge=right' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
-            return BlocksNamespace[tempkey];
+            return BlocksNamespace[tempkey as BlocksID];
         }
     }
     
@@ -1823,7 +1830,7 @@ function convertToLegacyBlockId(namespaceKey) {
         const tempkey = namespaceKey.substr(0, index) + 'facing=west' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
-            return BlocksNamespace[tempkey];
+            return BlocksNamespace[tempkey as BlocksID];
         }
     }
     
@@ -1831,7 +1838,7 @@ function convertToLegacyBlockId(namespaceKey) {
         const tempkey = namespaceKey.substr(0, index) + 'facing=north' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
-            return BlocksNamespace[tempkey];
+            return BlocksNamespace[tempkey as BlocksID];
         }
     }
     
@@ -1839,12 +1846,12 @@ function convertToLegacyBlockId(namespaceKey) {
         const tempkey = namespaceKey.substr(0, index) + 'half=lower' + namespaceKey.substr(namespaceKey.indexOf(',', index));
         
         if (tempkey in BlocksNamespace) {
-            return BlocksNamespace[tempkey];
+            return BlocksNamespace[tempkey as BlocksID];
         }
     }
     
     if (~(index = originalKey.indexOf('powered=true'))) {
-        const tempkey = originalKey.substr(0, index) + 'powered=false' + originalKey.substr(originalKey.indexOf(',', index));
+        const tempkey = originalKey.substr(0, index) + 'powered=false' + originalKey.substr(originalKey.indexOf(',', index)) as BlocksID;
     
         return convertToLegacyBlockId(tempkey);
     }
@@ -1854,7 +1861,7 @@ function convertToLegacyBlockId(namespaceKey) {
         const tempkey = originalKey.substr(0, index);
     
         if (tempkey in BlocksNamespace) {
-            return BlocksNamespace[tempkey];
+            return BlocksNamespace[tempkey as BlocksID];
         }
     }
     
@@ -1875,12 +1882,12 @@ function convertToLegacyBlockId(namespaceKey) {
 /**
  * Convert the block data to the legacy blocks and data
 */
-function convertBlockData(root): void {
+function convertBlockData(root: Schem): void {
     if ('Palette' in root && 'BlockData' in root) {
-        const palette = [];
+        const palette: BlocksID[] = [];
     
         for (const key in root.Palette) {
-            palette[root.Palette[key]] = key;
+            palette[root.Palette[key]!.valueOf()] = key as BlocksID;
         }
     
         const blockdata = root.BlockData;
@@ -1888,16 +1895,16 @@ function convertBlockData(root): void {
         const data = [];
         let varInt = 0;
         let varIntLength = 0;
-        let blockId;
+        let blockId: BlocksNamespace;
     
         for (let i = 0; i < blockdata.length; i++) {
-            varInt |= (blockdata[i] & 127) << (varIntLength++ * 7);
+            varInt |= (blockdata[i]! & 127) << (varIntLength++ * 7);
             
-            if ((blockdata[i] & 128) == 128) {
+            if ((blockdata[i]! & 128) == 128) {
                 continue;
             }
             
-            blockId = convertToLegacyBlockId(palette[varInt]);
+            blockId = convertToLegacyBlockId(palette[varInt]!);
             
             blocks.push(blockId >> 4);
             data.push(blockId & 0xF);
@@ -1906,8 +1913,9 @@ function convertBlockData(root): void {
             varInt = 0;
         }
         
-        root.Blocks = new Int8Array(blocks);
-        root.Data = new Int8Array(data);
+        (root as unknown as Schematic).Blocks = new Int8Array(blocks);
+        (root as unknown as Schematic).Data = new Int8Array(data);
+        // @ts-expect-error
         delete root.BlockData;
     }
 }
