@@ -1606,20 +1606,13 @@ export type BlocksID = keyof typeof BlocksNamespace;
 export async function schemToSchematic(arrayBuffer: Uint8Array): Promise<Uint8Array> {
     const root = await NBT.read<Schem>(arrayBuffer);
 
-    const schem = root.data;
-    const schematic: Schematic = {} as Schematic;
+    moveOffset(root.data);
+    moveOrigin(root.data);
+    setMaterials(root.data);
+    moveTileEntities(root.data);
+    convertBlockData(root.data);
 
-    moveOffset(schem,schematic);
-    moveOrigin(schem,schematic);
-    setMaterials(schem,schematic);
-    moveTileEntities(schem,schematic);
-    convertBlockData(schem,schematic);
-    copySimilar(schem,schematic);
-
-    console.log(Object.keys(schem));
-    console.log(Object.keys(schematic));
-
-    const data: Uint8Array = await NBT.write(schematic,root);
+    const data: Uint8Array = await NBT.write(root);
 
     return data;
 }
@@ -1627,41 +1620,49 @@ export async function schemToSchematic(arrayBuffer: Uint8Array): Promise<Uint8Ar
 /**
  * Move the schematic offset data to the old location
 */
-function moveOffset(schem: Schem, schematic: Schematic): void {
-    if ('Metadata' in schem) {
-        schematic.WEOffsetX = schem.Metadata.WEOffsetX;
-        schematic.WEOffsetY = schem.Metadata.WEOffsetY;
-        schematic.WEOffsetZ = schem.Metadata.WEOffsetZ;
+function moveOffset(root: Schem): void {
+    if ('Metadata' in root) {
+        (root as unknown as Schematic).WEOffsetX = root.Metadata.WEOffsetX;
+        (root as unknown as Schematic).WEOffsetY = root.Metadata.WEOffsetY;
+        (root as unknown as Schematic).WEOffsetZ = root.Metadata.WEOffsetZ;
+        
+        // @ts-expect-error
+        delete root.Metadata;
     }
 }
 
 /**
  * Move the schematic origin data to the old location
 */
-function moveOrigin(schem: Schem, schematic: Schematic): void {
-    if ('Offset' in schem) {
-        schematic.WEOriginX = new NBT.Int32(schem.Offset[0]!);
-        schematic.WEOriginY = new NBT.Int32(schem.Offset[1]!);
-        schematic.WEOriginZ = new NBT.Int32(schem.Offset[2]!);
+function moveOrigin(root: Schem): void {
+    if ('Offset' in root) {
+        (root as unknown as Schematic).WEOriginX = new NBT.Int32(root.Offset[0]!);
+        (root as unknown as Schematic).WEOriginY = new NBT.Int32(root.Offset[1]!);
+        (root as unknown as Schematic).WEOriginZ = new NBT.Int32(root.Offset[2]!);
+        
+        // @ts-expect-error
+        delete root.Offset;
     }
 }
 
 /**
  * Set the schematic materials type
 */
-function setMaterials(_schem: Schem, schematic: Schematic): void {
-    schematic.Materials = 'Alpha';
+function setMaterials(root: Schem): void {
+    (root as unknown as Schematic).Materials = 'Alpha';
 }
 
 /**
  * Move the tile entites to the old location and modify their position and id data
 */
-function moveTileEntities(schem: Schem, schematic: Schematic): void {
-    if ('BlockEntities' in schem) {
-        schematic.TileEntities = schem.BlockEntities as unknown as Schematic["TileEntities"];
+function moveTileEntities(root: Schem): void {
+    if ('BlockEntities' in root) {
+        (root as unknown as Schematic).TileEntities = root.BlockEntities as unknown as Schematic["TileEntities"];
+        // @ts-expect-error
+        delete root.BlockEntities;
         
-        for (let i = 0; i < schematic.TileEntities.length; i++) {
-            const tileEntity: SchematicTileEntity = schematic.TileEntities[i]!;
+        for (let i = 0; i < (root as unknown as Schematic).TileEntities.length; i++) {
+            const tileEntity: SchematicTileEntity = (root as unknown as Schematic).TileEntities[i]!;
             
             if ('Pos' in tileEntity) {
                 tileEntity.x = new NBT.Int32((tileEntity as unknown as SchemBlockEntity).Pos[0]!);
@@ -1874,22 +1875,22 @@ function convertToLegacyBlockId(namespaceKey: BlocksID): BlocksNamespace {
         }
     }
     
-    // console.log(error);
+    console.log(error);
     return 0;
 }
 
 /**
  * Convert the block data to the legacy blocks and data
 */
-function convertBlockData(schem: Schem, schematic: Schematic): void {
-    if ('Palette' in schem && 'BlockData' in schem) {
+function convertBlockData(root: Schem): void {
+    if ('Palette' in root && 'BlockData' in root) {
         const palette: BlocksID[] = [];
     
-        for (const key in schem.Palette) {
-            palette[schem.Palette[key]!.valueOf()] = key as BlocksID;
+        for (const key in root.Palette) {
+            palette[root.Palette[key]!.valueOf()] = key as BlocksID;
         }
     
-        const blockdata = schem.BlockData;
+        const blockdata = root.BlockData;
         const blocks = [];
         const data = [];
         let varInt = 0;
@@ -1912,13 +1913,9 @@ function convertBlockData(schem: Schem, schematic: Schematic): void {
             varInt = 0;
         }
         
-        schematic.Blocks = new Int8Array(blocks);
-        schematic.Data = new Int8Array(data);
+        (root as unknown as Schematic).Blocks = new Int8Array(blocks);
+        (root as unknown as Schematic).Data = new Int8Array(data);
+        // @ts-expect-error
+        delete root.BlockData;
     }
-}
-
-function copySimilar(schem: Schem, schematic: Schematic): void {
-    schematic.Width = schem.Width;
-    schematic.Height = schem.Height;
-    schematic.Length = schem.Length;
 }
